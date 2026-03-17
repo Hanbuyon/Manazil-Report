@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منازل (Manazil) | تحليل المنافسين الاستراتيجي</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts: Cairo for Arabic typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            dark: '#0f172a', // Slate 900
+                            primary: '#1e293b', // Slate 800
+                            accent: '#f59e0b', // Amber 500 (Gold)
+                            light: '#f8fafc', // Slate 50
+                            border: '#e2e8f0' // Slate 200
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Styles & Typography */
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        /* Chart Container Strict Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+            padding: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 280px;
+            }
+        }
+
+        /* Interactive Elements styling */
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #f59e0b;
+            color: #f59e0b;
+            font-weight: 700;
+        }
+        
+        .competitor-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+        .competitor-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .competitor-card.selected {
+            border: 2px solid #f59e0b;
+            background-color: #fffbeb;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-brand-light antialiased selection:bg-brand-accent selection:text-white">
+
+    <!-- 
+    Placeholder Comments Required by Prompt:
+    
+    <!- - Chosen Palette: Deep Slate (Corporate/Tech), Amber/Gold (Premium/Hospitality), Off-white (Cleanliness) - ->
+    
+    <!- - Application Structure Plan: 
+    The SPA is structured as a professional interactive dashboard with top-level navigation (Tabs). 
+    This structure was chosen to allow investors and stakeholders to easily navigate between the high-level summary, the core market gap analysis, the deep-dive competitor details, and strategic recommendations without losing context or getting lost in a massive scrollable document.
+    1. "الملخص والفجوة" (Summary & Gap): Sets the stage, explaining Manazil's core value and showing the market landscape via a Doughnut chart.
+    2. "تحليل المنافسين" (Competitor Deep Dive): The core interactive section. Users can filter competitors by geography (Yemen, MENA, Global) supporting the 50/30/20 research priority. Clicking a competitor updates a detailed panel and a Radar Chart to directly compare their capabilities against Manazil.
+    3. "الخلاصة الاستراتيجية" (Strategic Conclusion): Actionable takeaways.
+    - ->
+    
+    <!- - Visualization & Content Choices: 
+    - Market Landscape Doughnut Chart: Goal: Inform about the fragmentation of the Yemeni market vs standard markets. Justification: Easy visual comparison of market shares (Traditional vs Digital). Library: Chart.js (Canvas).
+    - Competitor Radar Chart: Goal: Compare Manazil against selected competitor across 5 key dimensions (AI, Compliance, PMS, Multi-type, Local Presence). Justification: Best way to show multivariate gaps simultaneously. Library: Chart.js (Canvas).
+    - Interactive Grid & Details Panel: Goal: Organize and present qualitative SWOT data cleanly. Justification: Avoids text overload; allows user-driven exploration. Uses Vanilla JS for DOM updates based on state. 
+    - ->
+    
+    <!- - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. Unicode emojis used for icons. - ->
+    -->
+
+    <!-- Header / Nav -->
+    <header class="bg-brand-dark text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🏰</span>
+                    <div>
+                        <h1 class="font-bold text-xl tracking-wide text-brand-accent">منازل <span class="text-white text-sm font-normal">| Manazil</span></h1>
+                        <p class="text-xs text-gray-400 hidden sm:block">تقرير تحليل المنافسين وأبحاث السوق</p>
+                    </div>
+                </div>
+                <nav class="flex gap-4 sm:gap-8 overflow-x-auto text-sm sm:text-base whitespace-nowrap hide-scrollbar">
+                    <button class="tab-btn active pb-4 pt-5 px-1" onclick="switchTab('overview')">📊 نظرة عامة والفجوة</button>
+                    <button class="tab-btn pb-4 pt-5 px-1" onclick="switchTab('competitors')">🔍 تحليل المنافسين</button>
+                    <button class="tab-btn pb-4 pt-5 px-1" onclick="switchTab('strategy')">🎯 التوصيات الاستراتيجية</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20">
+
+        <!-- TAB 1: OVERVIEW & GAP -->
+        <section id="tab-overview" class="block animate-fade-in">
+            <div class="bg-white rounded-xl shadow-sm border border-brand-border p-6 sm:p-8 mb-8">
+                <h2 class="text-2xl font-bold text-brand-primary mb-4">الملخص التنفيذي والمشهد العام</h2>
+                <p class="text-gray-600 leading-relaxed mb-6">
+                    يقدم هذا القسم نظرة شاملة على طبيعة السوق المستهدف، مع التركيز المكثف على <strong>السوق اليمني (كأولوية بنسبة 50%)</strong>، يليه السوق الإقليمي (السعودية والشرق الأوسط بنسبة 30%)، ثم اللاعبين العالميين (20%). نوضح هنا الفجوة الهائلة التي تملؤها منظومة "منازل" كأول منصة سحابية (SaaS & Marketplace) تدمج الذكاء الاصطناعي الوكيلي (Agentic AI - ساعد)، وإدارة الأملاك المتكاملة (PMS)، والامتثال الثقافي الصارم.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h3 class="text-xl font-bold text-brand-primary mb-3">طبيعة الفجوة في السوق المستهدف</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <span class="text-xl">🇾🇪</span>
+                                <div>
+                                    <strong class="block text-brand-dark">السوق اليمني (محيط أزرق بامتياز):</strong>
+                                    <span class="text-sm text-gray-600">سوق مجزأ يعتمد بنسبة 90% على مجموعات الواتساب، مكاتب العقار التقليدية، والأنظمة الورقية. انعدام تام لأي نظام PMS متكامل يخدم الإيجار القصير والطويل معاً.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-xl">🇸🇦</span>
+                                <div>
+                                    <strong class="block text-brand-dark">السوق الإقليمي (MENA):</strong>
+                                    <span class="text-sm text-gray-600">منصات متخصصة جداً (إما إيجار قصير مثل جاذر إن، أو طويل مثل عقار). تفتقر للذكاء الاصطناعي التفاعلي القادر على أتمتة مهام الملاك وتخطيط رحلات النزلاء.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="text-xl">🌍</span>
+                                <div>
+                                    <strong class="block text-brand-dark">المنصات العالمية:</strong>
+                                    <span class="text-sm text-gray-600">لا تدعم الامتثال الثقافي الصارم (KYC المحلي، قوانين العوائل/العزاب)، ولا تقدم حلولاً للمساحات التجارية والفعاليات في نفس المنظومة.</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                        <h4 class="text-center font-bold text-sm text-gray-500 mb-2">توزيع حصص القنوات الحالية في السوق اليمني المستهدف</h4>
+                        <div class="chart-container">
+                            <canvas id="marketShareChart"></canvas>
+                        </div>
+                        <p class="text-xs text-center text-gray-400 mt-2">يوضح الرسم كيف يعتمد السوق المحلي بشكل شبه كلي على قنوات غير منظمة، مما يبرز حجم الفرصة لمنصة متكاملة.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Core Differentiators -->
+            <h3 class="text-xl font-bold text-brand-primary mb-4 px-2">مفاتيح تفوق "منازل" الاستراتيجية</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-lg border-t-4 border-brand-accent shadow-sm">
+                    <div class="text-3xl mb-2">🤖</div>
+                    <h4 class="font-bold mb-1">الذكاء الوكيلي (ساعد)</h4>
+                    <p class="text-xs text-gray-500 leading-relaxed">ليس مجرد Chatbot. وكيل ذكي ينفذ مهام، يخطط، يحلل للملاك ويستند لتقنية RAG لضمان الدقة وتجنب الهلوسة.</p>
+                </div>
+                <div class="bg-white p-5 rounded-lg border-t-4 border-brand-accent shadow-sm">
+                    <div class="text-3xl mb-2">🏢</div>
+                    <h4 class="font-bold mb-1">تعدد العقارات الديناميكي</h4>
+                    <p class="text-xs text-gray-500 leading-relaxed">منصة واحدة للفنادق، الشاليهات، الإيجار السنوي، وقاعات الأفراح ومساحات العمل. (Super App عقاري).</p>
+                </div>
+                <div class="bg-white p-5 rounded-lg border-t-4 border-brand-accent shadow-sm">
+                    <div class="text-3xl mb-2">🛡️</div>
+                    <h4 class="font-bold mb-1">امتثال ثقافي صارم</h4>
+                    <p class="text-xs text-gray-500 leading-relaxed">تطبيق آلي لقوانين المنزل (عوائل/عزاب)، وإدارة سجلات النزلاء (Guest Ledger) لتتوافق مع المتطلبات الأمنية.</p>
+                </div>
+                <div class="bg-white p-5 rounded-lg border-t-4 border-brand-accent shadow-sm">
+                    <div class="text-3xl mb-2">📈</div>
+                    <h4 class="font-bold mb-1">نظام PMS & بيانات</h4>
+                    <p class="text-xs text-gray-500 leading-relaxed">لوحة تحكم متكاملة للمالك لإدارة الموظفين، الصيانة، التسعير، مع بيع تحليلات البيانات (Data Monetization).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: COMPETITOR ANALYSIS -->
+        <section id="tab-competitors" class="hidden animate-fade-in">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-brand-primary mb-2">تحليل المنافسين التفصيلي (Deep Dive)</h2>
+                <p class="text-gray-600 mb-4">
+                    استكشف قاعدة بيانات المنافسين. قمنا بتصنيفهم جغرافياً. يرجى استخدام الأزرار أدناه لتصفية المنافسين، ثم <strong>انقر على بطاقة المنافس</strong> لعرض التحليل المعمق ومقارنته المباشرة مع "منازل" عبر المخطط الراداري.
+                </p>
+                
+                <!-- Filters -->
+                <div class="flex gap-2 flex-wrap mb-6 border-b border-gray-200 pb-4">
+                    <button class="filter-btn active bg-brand-primary text-white px-4 py-1.5 rounded-full text-sm font-semibold transition" onclick="filterCompetitors('all')">الكل</button>
+                    <button class="filter-btn bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-1.5 rounded-full text-sm font-semibold transition" onclick="filterCompetitors('yemen')">السوق اليمني (الأولوية)</button>
+                    <button class="filter-btn bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-1.5 rounded-full text-sm font-semibold transition" onclick="filterCompetitors('mena')">السوق الإقليمي (MENA)</button>
+                    <button class="filter-btn bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-1.5 rounded-full text-sm font-semibold transition" onclick="filterCompetitors('global')">السوق العالمي</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Competitors List -->
+                <div class="lg:col-span-5 h-[600px] overflow-y-auto pr-2" id="competitorsGrid">
+                    <!-- Cards will be injected here by JS -->
+                </div>
+
+                <!-- Competitor Detail & Radar Chart -->
+                <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-brand-border p-6 relative min-h-[600px] flex flex-col">
+                    <div id="emptyDetailState" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 z-10 bg-white rounded-xl">
+                        <span class="text-5xl mb-3">👈</span>
+                        <p class="font-bold">اختر منافساً من القائمة لعرض التحليل المقارن</p>
+                    </div>
+
+                    <div id="competitorDetailContent" class="opacity-0 transition-opacity duration-300 hidden flex-col h-full">
+                        <div class="flex justify-between items-start border-b border-gray-100 pb-4 mb-4">
+                            <div>
+                                <span id="detRegion" class="inline-block px-2 py-1 bg-gray-100 text-xs rounded text-gray-500 mb-2"></span>
+                                <h3 id="detName" class="text-2xl font-bold text-brand-dark"></h3>
+                                <p id="detType" class="text-sm text-brand-accent font-semibold mt-1"></p>
+                            </div>
+                        </div>
+
+                        <p id="detDesc" class="text-sm text-gray-600 mb-6 leading-relaxed"></p>
+
+                        <!-- Radar Chart -->
+                        <div class="bg-gray-50 rounded-lg p-2 mb-6 border border-gray-100 flex-shrink-0">
+                            <h4 class="text-center font-bold text-sm text-gray-600 mb-1">مقارنة القدرات: منازل ضد <span id="chartCompName">المنافس</span></h4>
+                            <div class="chart-container h-[250px] !p-0">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- SWOT Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow overflow-y-auto pr-2 custom-scrollbar">
+                            <div class="bg-green-50/50 p-4 rounded border border-green-100">
+                                <h4 class="font-bold text-green-700 text-sm mb-2">💪 نقاط قوتهم</h4>
+                                <ul id="detStrengths" class="list-disc list-outside ml-4 mr-4 text-xs text-gray-700 space-y-1"></ul>
+                            </div>
+                            <div class="bg-red-50/50 p-4 rounded border border-red-100">
+                                <h4 class="font-bold text-red-700 text-sm mb-2">⚠️ نقاط ضعفهم</h4>
+                                <ul id="detWeaknesses" class="list-disc list-outside ml-4 mr-4 text-xs text-gray-700 space-y-1"></ul>
+                            </div>
+                            <div class="bg-blue-50/50 p-4 rounded border border-blue-100 sm:col-span-2">
+                                <h4 class="font-bold text-blue-700 text-sm mb-2">⚔️ كيف ننافسهم (فجوة السوق)</h4>
+                                <p id="detEdge" class="text-xs text-gray-700 leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: STRATEGIC RECOMMENDATIONS -->
+        <section id="tab-strategy" class="hidden animate-fade-in">
+             <div class="bg-white rounded-xl shadow-sm border border-brand-border p-6 sm:p-8">
+                <h2 class="text-2xl font-bold text-brand-primary mb-4">الخلاصة والتوصيات الاستراتيجية</h2>
+                <p class="text-gray-600 leading-relaxed mb-8">
+                    بناءً على التحليل المعمق للمنافسين والأسواق، نلخص أدناه التوصيات الاستراتيجية لفريق "منازل" لاكتساح السوق (خاصة في اليمن كنقطة انطلاق، ثم التوسع الإقليمي)، وتأكيد مكانتنا كـ "Super App" العقاري الأول.
+                </p>
+
+                <div class="space-y-6">
+                    <!-- Recommendation 1 -->
+                    <div class="flex gap-4 p-5 bg-slate-50 border border-slate-200 rounded-lg hover:border-brand-accent transition">
+                        <div class="text-3xl">🚀</div>
+                        <div>
+                            <h3 class="font-bold text-brand-dark text-lg mb-2">تكتيك الاختراق السريع (GTM) في اليمن</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                <strong>الوضع الحالي:</strong> المنافسة المحلية في اليمن شبه معدومة تقنياً، وتقتصر على مجموعات الفيسبوك والواتساب الفوضوية.<br>
+                                <strong>التوصية:</strong> التركيز الفوري على استقطاب 100 مالك عقار كعرض تأسيسي (Anchor Supply) في مدن رئيسية مثل تعز وصنعاء. استهداف مكاتب العقار التي تعاني من الفوضى الإدارية وتقديم منصة PMS "منازل" كأداة مجانية أو مخفضة مبدئياً لرقمنة مخزونهم، مما يضمن تدفق العقارات للمنصة تلقائياً.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation 2 -->
+                    <div class="flex gap-4 p-5 bg-slate-50 border border-slate-200 rounded-lg hover:border-brand-accent transition">
+                        <div class="text-3xl">🤖</div>
+                        <div>
+                            <h3 class="font-bold text-brand-dark text-lg mb-2">إبراز الذكاء الوكيلي "ساعد" كميزة بيع فريدة (USP)</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                <strong>الوضع الحالي:</strong> حتى عمالقة المنطقة (مثل جاذر إن والمسافر) يمتلكون محركات بحث تقليدية (فلاتر نصية).<br>
+                                <strong>التوصية:</strong> تسويق "ساعد" ليس كشات بوت، بل كـ "موظف استقبال ومدير أملاك شخصي". إطلاق حملات تسويقية تستعرض كيف يمكن للمستخدم كتابة: <em>"أريد شقة لعائلة في صنعاء قريبة من المستشفى، وميزانيتي 50 دولار لليوم"</em> ويقوم ساعد بإتمام الحجز. هذا سيبهر السوق الإقليمي ويخلق حاجز دخول (Barrier to Entry) تقني أمام المنافسين.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation 3 -->
+                    <div class="flex gap-4 p-5 bg-slate-50 border border-slate-200 rounded-lg hover:border-brand-accent transition">
+                        <div class="text-3xl">🛡️</div>
+                        <div>
+                            <h3 class="font-bold text-brand-dark text-lg mb-2">تسليح الامتثال الثقافي (Cultural Compliance as a Weapon)</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                <strong>الوضع الحالي:</strong> منصات كـ Airbnb و Booking تواجه رفضاً من الملاك المحافظين لعدم قدرتها على فرض قوانين صارمة (مثل منع العزاب في العمارات العائلية).<br>
+                                <strong>التوصية:</strong> جعل نظام "القوانين الداخلية" (House Rules Engine) و (KYC) المحلي محوراً أساسياً في جذب الملاك والمطورين العقاريين في السعودية واليمن، حيث يوفر لهم راحة البال القانونية والمجتمعية التي لا توفرها المنصات الغربية.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation 4 -->
+                    <div class="flex gap-4 p-5 bg-slate-50 border border-slate-200 rounded-lg hover:border-brand-accent transition">
+                        <div class="text-3xl">💼</div>
+                        <div>
+                            <h3 class="font-bold text-brand-dark text-lg mb-2">استهداف B2B وبيانات القطاع</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                <strong>الوضع الحالي:</strong> تفتقر الجهات السياحية والمستثمرون في الأسواق الناشئة لبيانات دقيقة عن معدلات الإشغال والطلب.<br>
+                                <strong>التوصية:</strong> تفعيل خطة "Data Monetization" مبكراً. تقديم تقارير دورية للجهات الحكومية (كوزارة السياحة) والمستثمرين العقاريين لتعزيز الموثوقية وفتح مسار إيرادات إضافي لا يقدمه المنافسون المحليون.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 text-center py-6 text-gray-500 text-sm">
+        <p>وثيقة سرية - تم إعدادها حصرياً لاستخدام المستثمرين والتحليل الاستراتيجي لفريق منصة <strong>منازل</strong>.</p>
+        <p class="mt-2 text-xs opacity-50">&copy; 2026 Manazil Platform. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State Management
+        let currentTab = 'overview';
+        let radarChartInstance = null;
+        let doughnutChartInstance = null;
+        let selectedCompetitorId = null;
+
+        // Data Storage: Competitors Database based on Prompt Requirements
+        const competitors = [
+            // --- YEMEN FOCUS (50%) ---
+            {
+                id: 'yemen_groups',
+                region: 'yemen',
+                name: 'مجموعات واتساب وفيسبوك',
+                type: 'بديل تقليدي / غير منظم',
+                desc: 'الطريقة الأكثر شيوعاً حالياً في اليمن للبحث عن الإيجارات القصيرة والطويلة. تعتمد على وسطاء (سماسرة) ومفاوضات يدوية.',
+                strengths: ['انتشار واسع جداً بين السكان.', 'سهولة الوصول للجميع دون تعقيد تقني.', 'لا توجد عمولات منصة واضحة (لكن عمولة سمسار عالية).'],
+                weaknesses: ['عشوائية تامة واحتمالية احتيال عالية جداً.', 'لا توجد صور موثوقة أو تقييمات.', 'غياب الدفع الإلكتروني أو العقود الموثقة.', 'إرهاق للمالك في إدارة الاستفسارات الوهمية.'],
+                manazilEdge: 'نوفر بيئة موثوقة، حجوزات فورية، عقود رقمية، وإدارة مؤتمتة تقضي على فوضى السماسرة والواتساب.',
+                scores: [10, 20, 10, 0, 90] // AI, Type, Compliance, PMS, Local
+            },
+            {
+                id: 'opensooq',
+                region: 'yemen',
+                name: 'السوق المفتوح (OpenSooq)',
+                type: 'منصة إعلانات مبوبة',
+                desc: 'منصة الإعلانات المبوبة الأشهر. تُستخدم لعرض العقارات للإيجار أو البيع كقوائم إعلانية ثابتة.',
+                strengths: ['حركة مرور (Traffic) هائلة في اليمن والمنطقة.', 'يغطي كافة أنواع العقارات.', 'وعي عالي بالعلامة التجارية.'],
+                weaknesses: ['مجرد لوحة إعلانات؛ لا يمكن "الحجز" عبر المنصة.', 'لا يوجد نظام إدارة ممتلكات (PMS).', 'تجربة مستخدم عامة وغير مخصصة للضيافة.', 'غياب تام للذكاء الاصطناعي المساعد.'],
+                manazilEdge: 'منازل ليست منصة إعلانية، بل منظومة تشغيلية متكاملة (Transactional Marketplace) تمكّن الحجز والدفع والإدارة من مكان واحد.',
+                scores: [20, 80, 20, 10, 100]
+            },
+            {
+                id: 'local_yemen_apps',
+                region: 'yemen',
+                name: 'تطبيقات الفنادق المحلية (الناشئة)',
+                type: 'دليل هواتف محلي',
+                desc: 'بعض التطبيقات اليمنية الصغيرة والمواقع التي تعمل كدليل أرقام هواتف لفنادق محددة في العاصمة أو المدن الرئيسية.',
+                strengths: ['محاولة التركيز على السوق المحلي.', 'علاقات شخصية مع بعض أصحاب الفنادق.'],
+                weaknesses: ['بنية تحتية تقنية ضعيفة جداً.', 'غالباً لا توجد بوابات دفع إلكترونية فعالة.', 'مخزون محدود يقتصر على فنادق معينة ولا يشمل الشقق أو المساحات التجارية.', 'لا يوجد PMS حقيقي للمالك.'],
+                manazilEdge: 'تفوق تقني كاسح (بنية سحابية، ذكاء اصطناعي، بوابات دفع متكاملة)، وتنوع يشمل كل أنواع العقارات.',
+                scores: [10, 30, 40, 20, 60]
+            },
+            
+            // --- MENA FOCUS (30%) ---
+            {
+                id: 'gathern',
+                region: 'mena',
+                name: 'جاذر إن (Gathern)',
+                type: 'منصة إيجار قصير / شاليهات',
+                desc: 'شركة سعودية ناشئة ناجحة تركز على قطاع الـ Peer-to-Peer، وتحديداً الشاليهات والاستراحات والشقق المفروشة للإيجار القصير في السعودية.',
+                strengths: ['فهم عميق للسوق السعودي وثقافة (الاستراحات).', 'واجهة مستخدم جيدة وتسويق ممتاز.', 'مرونة في الحجز القصير.'],
+                weaknesses: ['تفتقر لتقنيات الذكاء الاصطناعي الوكيلي لتخطيط الرحلات.', 'لا تخدم قطاع الإيجار طويل الأمد (السكني).', 'لا تخدم قطاع مساحات العمل والمكاتب.', 'نظام الـ PMS لديهم أساسي ولا يخدم الفنادق الكبرى.'],
+                manazilEdge: 'منازل تتفوق بنظام PMS شامل، ودمج الإيجار القصير مع الطويل والمساحات التجارية، مدعوماً بمحرك ذكاء اصطناعي (ساعد) يتجاوز مجرد الحجز.',
+                scores: [30, 60, 80, 50, 90]
+            },
+            {
+                id: 'almosafer',
+                region: 'mena',
+                name: 'المسافر (Almosafer)',
+                type: 'وكالة سفر إلكترونية (OTA)',
+                desc: 'منصة السفر الرائدة في السعودية للرحلات والفنادق العالمية والمحلية.',
+                strengths: ['شراكات ضخمة وميزانيات تسويق مهولة.', 'موثوقية عالية وخدمة عملاء قوية.', 'تكامل مع حجوزات الطيران.'],
+                weaknesses: ['نموذج وكالة سفر تقليدية (لا تركز على الشقق الخاصة أو الشاليهات بقوة).', 'لا تخدم العقود السكنية الطويلة الأمد إطلاقاً.', 'لا توفر لوحة تحكم تشغيلية (PMS) للمالك الصغير.', 'لا تمتلك تقنيات Agentic AI محادثة.'],
+                manazilEdge: 'منازل تمكّن الملاك الأفراد من الدخول للسوق (Marketplace) وتقدم لهم أدوات تشغيلية (SaaS)، ولا تقتصر على الفنادق الكبرى.',
+                scores: [40, 40, 70, 30, 100]
+            },
+            {
+                id: 'aqar',
+                region: 'mena',
+                name: 'عقار (Aqar) / وصلت',
+                type: 'منصات عقارية (طويل الأمد)',
+                desc: 'منصات سعودية عملاقة متخصصة في بيع وتأجير العقارات (طويلة الأمد) والأراضي.',
+                strengths: ['هيمنة مطلقة على سوق العقار التقليدي السعودي.', 'دمج مع الأنظمة الحكومية (إيجار).', 'بيانات ضخمة.'],
+                weaknesses: ['غير متخصصة في قطاع الضيافة والإيجار السياحي القصير.', 'لا تناسب نظام الحجز اليومي.', 'تفتقر لإدارة المرافق التشغيلية اليومية للمباني (كالصيانة اللحظية وإدارة الموظفين).'],
+                manazilEdge: 'ندمج بين سهولة حجز الضيافة اليومية، وبين رقمنة العقود الطويلة الأمد، لنكون وجهة واحدة للمالك أياً كان نوع عقاره.',
+                scores: [20, 50, 90, 40, 90]
+            },
+
+            // --- GLOBAL FOCUS (20%) ---
+            {
+                id: 'airbnb',
+                region: 'global',
+                name: 'Airbnb',
+                type: 'منصة عالمية للإيجار القصير',
+                desc: 'الرائد العالمي في قطاع الإيجارات القصيرة والمنازل المشتركة.',
+                strengths: ['تجربة مستخدم عالمية لا يعلى عليها.', 'علامة تجارية موثوقة.', 'خوارزميات تسعير متطورة.'],
+                weaknesses: ['تواجد ضعيف ودعم معدوم في اليمن والأسواق الناشئة المماثلة.', 'لا يمتثل للثقافة المحلية (صعوبة فرض قوانين صارمة كمنع العزاب في سكن عائلي تلقائياً).', 'لا يدعم الحجوزات بالساعات (كقاعات الأفراح والمكاتب).', 'دعم اللغة العربية وتوطين المدفوعات ضعيف في بعض الدول العربية.'],
+                manazilEdge: 'منازل مفصلة ثقافياً وقانونياً للشرق الأوسط (محرك امتثال صارم)، وتقدم أدوات شاملة حتى للقطاع التجاري وتدعم الذكاء الوكيلي بالعربية المعقدة.',
+                scores: [60, 50, 30, 60, 20]
+            },
+            {
+                id: 'booking',
+                region: 'global',
+                name: 'Booking.com',
+                type: 'وكالة سفر إلكترونية عالمية (OTA)',
+                desc: 'أكبر منصة عالمية لحجز الفنادق وأماكن الإقامة.',
+                strengths: ['مخزون فنادق عالمي هائل.', 'برامج ولاء قوية (Genius).', 'موثوقية مطلقة في الحجوزات.'],
+                weaknesses: ['عمولات مرتفعة جداً للملاك (15-20%+).', 'واجهة نظام إدارة الملاك (Extranet) معقدة وقديمة نسبياً.', 'تجاهل تام لقطاع الإيجار السكني السنوي ومساحات العمل.', 'ضعف التخصيص الثقافي للمنطقة العربية.'],
+                manazilEdge: 'نوفر منصة واحدة تخدم الفندق والشقة وقاعة الأفراح، مع واجهة PMS أسهل بكثير، وبتكلفة أنسب، مع ذكاء اصطناعي تفاعلي يبني خطط رحلات كاملة للنزيل.',
+                scores: [50, 40, 20, 70, 40]
+            }
+        ];
+
+        // Manazil Base Scores for Comparison [AI, Property Diversity, Cultural Compliance, PMS Power, Local Fit]
+        const manazilScores = [95, 100, 95, 90, 100]; 
+        const radarLabels = ['الذكاء الاصطناعي الوكيلي', 'تنوع العقارات (قصير/طويل/تجارية)', 'الامتثال الثقافي والقانوني', 'قوة نظام إدارة الأملاك (PMS)', 'التوافق والتواجد المحلي'];
+
+        // Core Interaction Handling
+        function switchTab(tabId) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'border-brand-accent'));
+            document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+
+            // Update sections
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden', 'block'));
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.remove('block'));
+            
+            const targetSection = document.getElementById(`tab-${tabId}`);
+            targetSection.classList.remove('hidden');
+            targetSection.classList.add('block');
+
+            // Render specific tab charts if needed
+            if (tabId === 'overview' && !doughnutChartInstance) {
+                initDoughnutChart();
+            } else if (tabId === 'competitors') {
+                if(document.getElementById('competitorsGrid').innerHTML.trim() === '') {
+                    renderCompetitors('all');
+                }
+            }
+        }
+
+        // Render Competitor Cards
+        function renderCompetitors(filter) {
+            const grid = document.getElementById('competitorsGrid');
+            grid.innerHTML = ''; // Clear existing
+            
+            // Update filter button styling
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-primary', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            document.querySelector(`[onclick="filterCompetitors('${filter}')"]`).classList.remove('bg-gray-200', 'text-gray-700');
+            document.querySelector(`[onclick="filterCompetitors('${filter}')"]`).classList.add('bg-brand-primary', 'text-white');
+
+            const filteredData = filter === 'all' ? competitors : competitors.filter(c => c.region === filter);
+
+            filteredData.forEach(comp => {
+                const flag = comp.region === 'yemen' ? '🇾🇪' : (comp.region === 'mena' ? '🌍 (MENA)' : '🌐 (عالمي)');
+                const card = document.createElement('div');
+                card.className = `competitor-card bg-white p-4 mb-4 rounded-lg border border-gray-200 flex justify-between items-center ${selectedCompetitorId === comp.id ? 'selected' : ''}`;
+                card.onclick = () => selectCompetitor(comp.id);
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="text-xs text-gray-400 mb-1">${flag}</div>
+                        <h4 class="font-bold text-brand-primary text-lg">${comp.name}</h4>
+                        <p class="text-xs text-gray-500 mt-1">${comp.type}</p>
+                    </div>
+                    <div class="text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterCompetitors(region) {
+            renderCompetitors(region);
+        }
+
+        // Handle Competitor Selection & Update Details
+        function selectCompetitor(id) {
+            selectedCompetitorId = id;
+            const comp = competitors.find(c => c.id === id);
+            if (!comp) return;
+
+            // Update UI Selection state
+            document.querySelectorAll('.competitor-card').forEach(c => c.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+
+            // Hide empty state, show content
+            document.getElementById('emptyDetailState').style.display = 'none';
+            const detailContent = document.getElementById('competitorDetailContent');
+            detailContent.classList.remove('hidden');
+            setTimeout(() => detailContent.classList.remove('opacity-0'), 10); // Fade in
+
+            // Populate Text Data
+            const regionLabels = {'yemen': 'السوق اليمني', 'mena': 'الشرق الأوسط (MENA)', 'global': 'سوق عالمي'};
+            document.getElementById('detRegion').innerText = regionLabels[comp.region];
+            document.getElementById('detName').innerText = comp.name;
+            document.getElementById('detType').innerText = comp.type;
+            document.getElementById('detDesc').innerText = comp.desc;
+            document.getElementById('detEdge').innerText = comp.manazilEdge;
+            document.getElementById('chartCompName').innerText = comp.name;
+
+            // Populate Lists
+            const ulStrengths = document.getElementById('detStrengths');
+            ulStrengths.innerHTML = '';
+            comp.strengths.forEach(s => ulStrengths.innerHTML += `<li>${s}</li>`);
+
+            const ulWeaknesses = document.getElementById('detWeaknesses');
+            ulWeaknesses.innerHTML = '';
+            comp.weaknesses.forEach(w => ulWeaknesses.innerHTML += `<li>${w}</li>`);
+
+            // Update Radar Chart
+            updateRadarChart(comp);
+        }
+
+        // Chart.js: Radar Chart
+        function updateRadarChart(competitor) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            const data = {
+                labels: radarLabels,
+                datasets: [
+                    {
+                        label: 'منازل (Manazil)',
+                        data: manazilScores,
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)', // Amber
+                        borderColor: 'rgba(245, 158, 11, 1)',
+                        pointBackgroundColor: 'rgba(245, 158, 11, 1)',
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: competitor.name,
+                        data: competitor.scores,
+                        backgroundColor: 'rgba(100, 116, 139, 0.2)', // Slate
+                        borderColor: 'rgba(100, 116, 139, 1)',
+                        pointBackgroundColor: 'rgba(100, 116, 139, 1)',
+                        borderWidth: 2,
+                        fill: true
+                    }
+                ]
+            };
+
+            const config = {
+                type: 'radar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: { display: false },
+                            pointLabels: {
+                                font: {
+                                    family: 'Cairo',
+                                    size: 11,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Cairo', size: 12 },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            titleFont: { family: 'Cairo' },
+                            bodyFont: { family: 'Cairo' }
+                        }
+                    }
+                }
+            };
+
+            if (radarChartInstance) {
+                radarChartInstance.destroy();
+            }
+            radarChartInstance = new Chart(ctx, config);
+        }
+
+        // Chart.js: Doughnut Chart (Market Gap)
+        function initDoughnutChart() {
+            const ctx = document.getElementById('marketShareChart').getContext('2d');
+            doughnutChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        'وسائل غير منظمة (واتساب/فيسبوك)',
+                        'مكاتب العقار التقليدية',
+                        'السوق المفتوح (مبوبة)',
+                        'تطبيقات محلية بدائية',
+                        'حصة "منازل" المستهدفة (الفجوة الرقمية)'
+                    ],
+                    datasets: [{
+                        data: [45, 30, 15, 5, 5], // Example illustrative data for Yemen
+                        backgroundColor: [
+                            '#94a3b8', // slate-400
+                            '#cbd5e1', // slate-300
+                            '#e2e8f0', // slate-200
+                            '#f1f5f9', // slate-100
+                            '#f59e0b'  // amber-500 (Manazil Opportunity)
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: { family: 'Cairo', size: 11 },
+                                boxWidth: 12
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ~' + context.parsed + '%';
+                                }
+                            },
+                            titleFont: { family: 'Cairo' },
+                            bodyFont: { family: 'Cairo' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initDoughnutChart(); // Init first chart
+        });
+
+    </script>
+</body>
+</html>
